@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bharat Collections - Gnani AI</title>
+<style>
+* { box-sizing: border-box; }
+body { font-family: Arial, sans-serif; background: #f6f7fb; margin: 0; padding: 16px; color: #111; }
+.top { background: #111; color: #fff; padding: 16px 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
+.top small { opacity: .8; }
+.pill { padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 700; }
+.ok { background: #1db954; color: #fff; }
+.no { background: #ff3b30; color: #fff; }
+.card { background: #fff; border-radius: 12px; padding: 16px; margin-top: 14px; box-shadow: 0 2px 10px rgba(0,0,0,.06); }
+h3 { margin: 0 0 10px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+input[type=text], input[type=file] { padding: 10px; border: 1px solid #ddd; border-radius: 8px; flex: 1; min-width: 180px; }
+button { padding: 10px 16px; border: 0; border-radius: 8px; cursor: pointer; font-weight: 700; }
+.black { background: #111; color: #fff; }
+.orange { background: #ff7a00; color: #fff; }
+.red { background: #ff3b30; color: #fff; }
+.grey { background: #eee; }
+.green { background: #1db954; color: #fff; }
+.try { padding: 6px 10px; background: #eef2ff; border-radius: 20px; cursor: pointer; font-size: 13px; }
+.msg { margin-top: 10px; padding: 10px; border-radius: 8px; background: #eef7ff; font-size: 14px; }
+.chatbox { border: 1px solid #eee; border-radius: 10px; padding: 12px; min-height: 120px; max-height: 300px; overflow: auto; background: #fafafa; }
+.bubble { padding: 10px; border-radius: 10px; margin-bottom: 8px; font-size: 14px; }
+.me { background: #111; color: #fff; }
+.ai { background: #e8f5e9; }
+.filebox { border: 1px solid #eee; padding: 10px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { padding: 8px; border-bottom: 1px solid #eee; text-align: left; }
+th { background: #f8f8f8; }
+audio { width: 100%; margin-top: 8px; }
+@media (max-width: 700px) { .top { flex-direction: column; align-items: flex-start; gap: 8px; } table { font-size: 12px; } }
+</style>
+</head>
+<body>
+<div class="top">
+  <div><b style="font-size:20px">Bharat Collections Agents</b><br><small>Gnani AI - 13 Languages - Same Language Reply - TRAI 8 AM - 9 PM</small></div>
+  <div>{% if gnani_connected %}<span class="pill ok">● Gnani API Connected</span>{% else %}<span class="pill no">● Gnani API Key Required</span>{% endif %}</div>
+</div>
+
+<div class="card">
+  <h3>📤 Upload Customers - Any File - Name, Phone, Due Only</h3>
+  <p style="color:#666;font-size:13px;margin:4px 0">CSV / Excel / PDF / Word / TXT / JSON - Name, Phone, Due</p>
+  <div class="row"><input type="file" id="files" multiple><button class="black" onclick="uploadFiles()">Upload</button></div>
+  <div id="uploadMsg"></div>
+  {% for f in files %}
+  <div class="filebox"><b>{{ f.file_name }} - {{ f.cnt }} Customers</b><div class="row"><button class="green" data-fn="{{ f.file_name }}" onclick="callFile(this.dataset.fn)">📞 Call This File</button><button class="red" data-fn="{{ f.file_name }}" onclick="deleteFile(this.dataset.fn)">Delete File</button></div></div>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <h3>🤖 AI Chat Test - Voice / Text</h3>
+  <div class="row">
+    <span class="try" onclick="setTry(this)">Nenu Tomorrow Kattestha</span>
+    <span class="try" onclick="setTry(this)">nanu asalu kathanu</span>
+    <span class="try" onclick="setTry(this)">Main Kal Pay Karunga</span>
+    <span class="try" onclick="setTry(this)">i will pay tommarow</span>
+    <span class="try" onclick="setTry(this)">Human Kavali</span>
+    <span class="try" onclick="setTry(this)">Wait Konchem Aagu</span>
+  </div><br>
+  <div class="row"><input type="text" id="chatInput" placeholder="Type here... Nenu Tomorrow Kattestha"><button class="black" onclick="sendChat()">Send - Gnani</button><button class="orange" id="voiceBtn" onclick="toggleVoice()">🎤 Voice - Gnani Prisma STT</button></div>
+  <div class="chatbox" id="chatBox"></div>
+  <audio id="audioPlayer" controls style="display:none"></audio>
+</div>
+
+<div class="card">
+  <h3>👥 Customers ({{ customers|length }})</h3>
+  <div class="row"><button class="grey" onclick="selectAll()">Select All</button><button class="red" onclick="deleteSelected()">Delete Selected</button></div><br>
+  <table>
+    <thead><tr><th><input type="checkbox" id="masterCheck" onclick="toggleAll(this)"></th><th>Name</th><th>Phone</th><th>Due ₹</th><th>Status</th><th>File</th><th>Action</th></tr></thead>
+    <tbody>
+      {% for c in customers %}
+      <tr><td><input type="checkbox" class="rowCheck" value="{{ c.id }}"></td><td>{{ c.name }}</td><td>{{ c.phone }}</td><td>{{ c.due }}</td><td>{{ c.call_status }}</td><td>{{ c.file_name if c.file_name else '' }}</td><td><button class="grey" data-id="{{ c.id }}" onclick="deleteOne(this.dataset.id)">Delete</button></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+function setTry(el) { document.getElementById('chatInput').value = el.innerText; }
+
+async function uploadFiles() {
+  const inp = document.getElementById('files');
+  if (!inp.files.length) { alert('File Select Cheyyi'); return; }
+  const fd = new FormData();
+  for (let f of inp.files) fd.append('files', f);
+  const r = await fetch('/upload', { method: 'POST', body: fd });
+  const d = await r.json();
+  document.getElementById('uploadMsg').innerHTML = '<div class="msg">' + (d.message || d.error) + '</div>';
+  setTimeout(function() { location.reload(); }, 1200);
+}
+
+async function callFile(fn) {
+  const r = await fetch('/call_file', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ file_name: fn }) });
+  const d = await r.json();
+  alert(d.message || d.error);
+}
+
+async function deleteFile(fn) {
+  if (!confirm(fn + ' Delete Cheyyala?')) return;
+  await fetch('/delete_file', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ file_name: fn }) });
+  location.reload();
+}
+
+async function deleteOne(id) {
+  await fetch('/delete_customer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id }) });
+  location.reload();
+}
+
+function selectAll() { document.querySelectorAll('.rowCheck').forEach(function(c) { c.checked = true; }); }
+function toggleAll(m) { document.querySelectorAll('.rowCheck').forEach(function(c) { c.checked = m.checked; }); }
+
+async function deleteSelected() {
+  const ids = Array.from(document.querySelectorAll('.rowCheck:checked')).map(function(c) { return c.value; });
+  if (!ids.length) { alert('Select Cheyyi'); return; }
+  await fetch('/delete_customers', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: ids }) });
+  location.reload();
+}
+
+async function sendChat() {
+  const inp = document.getElementById('chatInput');
+  const text = inp.value.trim();
+  if (!text) return;
+  const box = document.getElementById('chatBox');
+  box.innerHTML += '<div class="bubble me">Nuvvu: ' + text + '</div>';
+  inp.value = '';
+  const r = await fetch('/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: text, customer: 'Test User' }) });
+  const d = await r.json();
+  if (d.error) { box.innerHTML += '<div class="bubble ai">Error: ' + d.error + '</div>'; return; }
+  box.innerHTML += '<div class="bubble ai">Lang: ' + d.lang + ' | Intent: ' + d.intent + '<br>Reply: ' + d.reply + '</div>';
+  box.scrollTop = box.scrollHeight;
+  if (d.audio_url) { const a = document.getElementById('audioPlayer'); a.style.display = 'block'; a.src = d.audio_url; a.play(); }
+}
+
+let mediaRecorder = null;
+let chunks = [];
+let recording = false;
+let isProcessing = false;
+
+async function toggleVoice() {
+  const btn = document.getElementById('voiceBtn');
+  if (isProcessing) { alert('Wait Cheyyi - Paatha Request Nadusthundhi - 20 Sec Aagu'); return; }
+  if (!recording) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      let mime = '';
+      let ext = 'voice.m4a';
+      if (MediaRecorder.isTypeSupported('audio/mp4')) { mime = 'audio/mp4'; ext = 'voice.m4a'; }
+      else if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) { mime = 'audio/ogg;codecs=opus'; ext = 'voice.ogg'; }
+      else if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) { mime = 'audio/webm;codecs=opus'; ext = 'voice.ogg'; }
+      mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+      chunks = [];
+      mediaRecorder.ondataavailable = function(e) { if (e.data.size > 0) chunks.push(e.data); };
+      mediaRecorder.onstop = async function() {
+        stream.getTracks().forEach(function(t) { t.stop(); });
+        const blob = new Blob(chunks, { type: mime || 'audio/mp4' });
+        if (blob.size < 5000) { alert('Voice Chala Chinna Ga Vachindhi - Konchem Peddaga, 2-3 Sec Matladu'); return; }
+        isProcessing = true;
+        btn.innerText = '⏳ Gnani Reply Kosam Wait Cheyyi...';
+        const fd = new FormData();
+        fd.append('audio', blob, ext);
+        fd.append('customer', 'Test User');
+        try {
+          const r = await fetch('/gnani_voice', { method: 'POST', body: fd });
+          const d = await r.json();
+          const box = document.getElementById('chatBox');
+          if (d.error) { box.innerHTML += '<div class="bubble ai">Error: ' + d.error + '</div>'; }
+          else {
+            box.innerHTML += '<div class="bubble me">Nuvvu (Voice): ' + d.text + '</div><div class="bubble ai">Lang: ' + d.lang + ' | Intent: ' + d.intent + '<br>Reply: ' + d.reply + '</div>';
+            box.scrollTop = box.scrollHeight;
+            if (d.audio_url) { const a = document.getElementById('audioPlayer'); a.style.display = 'block'; a.src = d.audio_url; a.play(); }
+          }
+        } catch(e) { alert('Network Error - Malli Try Cheyyi'); }
+        isProcessing = false;
+        btn.innerText = '🎤 Voice - Gnani Prisma STT';
+        btn.style.background = '#ff7a00';
+      };
+      mediaRecorder.start();
+      recording = true;
+      btn.innerText = '⏹️ Stop - Recording...';
+      btn.style.background = '#ff3b30';
+    } catch (e) {
+      alert('Mic Permission Ivv - Allow Kottu');
+    }
+  } else {
+    mediaRecorder.stop();
+    recording = false;
+    btn.innerText = '🎤 Voice - Gnani Prisma STT';
+    btn.style.background = '#ff7a00';
+  }
+}
+
+document.getElementById('chatInput').addEventListener('keypress', function(e) { if (e.key === 'Enter') sendChat(); });
+</script>
+</body>
+</html>

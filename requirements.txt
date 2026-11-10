@@ -1,0 +1,7 @@
+Flask
+python-dotenv
+requests
+PyMuPDF
+python-docx
+openpyxl
+gunicorn
